@@ -1,17 +1,12 @@
 import SwiftUI
-import AVFoundation
 
 struct ContentView: View {
     @StateObject private var detectionEngine = DetectionEngine.shared
     @State private var isRunning = false
-    @State private var sensitivity: Double = 0.65
-    @State private var showEnemies = true
-    @State private var showAllies = false
-    @State private var showHealthBars = true
     
     var body: some View {
         ZStack {
-            Color.black.edgesIgnoringSafeArea(.all)
+            Color.red.edgesIgnoringSafeArea(.all)
             
             if isRunning {
                 runningGUI
@@ -22,10 +17,10 @@ struct ContentView: View {
     }
     
     var idleGUI: some View {
-        VStack(spacing: 30) {
-            Text("MLBB ESP OVERLAY")
-                .font(.system(size: 32, weight: .heavy, design: .monospaced))
-                .foregroundColor(.green)
+        VStack(spacing: 40) {
+            Text("MLBB ESP")
+                .font(.system(size: 36, weight: .heavy, design: .monospaced))
+                .foregroundColor(.white)
             
             Button(action: {
                 isRunning = true
@@ -33,60 +28,24 @@ struct ContentView: View {
                 detectionEngine.start()
             }) {
                 Text("START")
-                    .frame(width: 200, height: 60)
-                    .background(Color.green.opacity(0.9))
+                    .frame(width: 250, height: 70)
+                    .background(Color.white)
                     .foregroundColor(.black)
-                    .font(.system(size: 24, weight: .heavy, design: .monospaced))
-                    .cornerRadius(8)
+                    .font(.system(size: 28, weight: .heavy, design: .monospaced))
+                    .cornerRadius(12)
             }
         }
     }
     
     var runningGUI: some View {
-        VStack(spacing: 15) {
-            Text("MLBB ESP OVERLAY")
-                .font(.system(size: 22, weight: .heavy, design: .monospaced))
-                .foregroundColor(.green)
-            
-            HStack(spacing: 20) {
-                Toggle("Enemies", isOn: $showEnemies)
-                    .onChange(of: showEnemies) { newValue in
-                        detectionEngine.showEnemies = newValue
-                    }
-                    .toggleStyle(SwitchToggleStyle(tint: .red))
-                    .foregroundColor(.white)
-                
-                Toggle("Allies", isOn: $showAllies)
-                    .onChange(of: showAllies) { newValue in
-                        detectionEngine.showAllies = newValue
-                    }
-                    .toggleStyle(SwitchToggleStyle(tint: .blue))
-                    .foregroundColor(.white)
-                
-                Toggle("Health", isOn: $showHealthBars)
-                    .onChange(of: showHealthBars) { newValue in
-                        detectionEngine.showHealthBars = newValue
-                    }
-                    .toggleStyle(SwitchToggleStyle(tint: .green))
-                    .foregroundColor(.white)
-            }
-            
-            HStack {
-                Text("Threshold:")
-                    .foregroundColor(.white)
-                    .font(.system(size: 14, design: .monospaced))
-                Slider(value: $sensitivity, in: 0.3...0.95)
-                    .onChange(of: sensitivity) { newValue in
-                        detectionEngine.detectionThreshold = newValue
-                    }
-                Text(String(format: "%.2f", sensitivity))
-                    .foregroundColor(.yellow)
-                    .monospacedDigit()
-            }
+        VStack(spacing: 20) {
+            Text("MLBB ESP")
+                .font(.system(size: 24, weight: .heavy, design: .monospaced))
+                .foregroundColor(.white)
             
             ESPOverlayView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .border(Color.green, width: 1)
+                .border(Color.white, width: 1)
             
             Button(action: {
                 detectionEngine.stop()
@@ -95,11 +54,11 @@ struct ContentView: View {
             }) {
                 Text("STOP")
                     .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Color.red.opacity(0.9))
+                    .frame(height: 60)
+                    .background(Color.black)
                     .foregroundColor(.white)
-                    .font(.system(size: 20, weight: .heavy, design: .monospaced))
-                    .cornerRadius(8)
+                    .font(.system(size: 24, weight: .heavy, design: .monospaced))
+                    .cornerRadius(12)
             }
             .padding(.horizontal)
         }
