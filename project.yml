@@ -1,0 +1,24 @@
+name: MLBB-ESP
+options:
+  bundleIdPrefix: com.kakuforge
+  deploymentTarget:
+    iOS: "15.0"
+targets:
+  MLBB-ESP:
+    type: application
+    platform: iOS
+    sources:
+      - MLBB-ESP
+    settings:
+      base:
+        INFOPLIST_FILE: MLBB-ESP/Info.plist
+        CODE_SIGN_ENTITLEMENTS: MLBB-ESP/MLBB_ESP.entitlements
+        CODE_SIGNING_ALLOWED: "NO"
+        TARGETED_DEVICE_FAMILY: "1,2"
+    info:
+      path: MLBB-ESP/Info.plist
+      properties:
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
+        NSLocalNetworkUsageDescription: "Local network access for game state detection"
