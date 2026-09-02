@@ -1,0 +1,57 @@
+name: Build iOS IPA
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      
+    - name: Setup Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: '15.4'
+        
+    - name: Install XcodeGen
+      run: |
+        brew install xcodegen
+        
+    - name: Generate Xcode Project
+      run: |
+        cd $GITHUB_WORKSPACE
+        xcodegen generate
+        
+    - name: Build IPA
+      run: |
+        cd $GITHUB_WORKSPACE
+        xcodebuild archive \
+          -project MLBB-ESP.xcodeproj \
+          -scheme MLBB-ESP \
+          -archivePath build/MLBB-ESP.xcarchive \
+          -configuration Release \
+          CODE_SIGNING_ALLOWED=NO \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGN_IDENTITY="" 
+          
+        mkdir -p Payload
+        cp -R build/MLBB-ESP.xcarchive/Products/Applications/MLBB-ESP.app Payload/
+        zip -r MLBB-ESP.ipa Payload
+        rm -rf Payload
+        
+    - name: Upload IPA
+      uses: actions/upload-artifact@v4
+      with:
+        name: MLBB-ESP-IPA
+        path: MLBB-ESP.ipa
+        
+    - name: Create Release
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: softprops/action-gh-release@v2
+      with:
+        files: MLBB-ESP.ipa
