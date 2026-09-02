@@ -47,15 +47,13 @@ class HackState: ObservableObject {
         overlayController = nil
         memoryManager.detach()
 
-        withAnimation(.easeInOut(duration: 0.3)) {
-            isConnected = false
-            isTransitioning = false
-            statusText = "Not Connected"
-            mlbbPID = 0
-            baseAddress = 0
-            entityCount = 0
-            currentFPS = 0
-        }
+        isConnected = false
+        isTransitioning = false
+        statusText = "Not Connected"
+        mlbbPID = 0
+        baseAddress = 0
+        entityCount = 0
+        currentFPS = 0
     }
 
     func resetState() {
