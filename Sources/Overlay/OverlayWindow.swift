@@ -148,14 +148,14 @@ class ESPMenuView: UIView {
 
     func refreshToggles() {
         guard let state = hackState else { return }
-        espToggle.setTitle(state.isConnected || state.statusText == "Connected" ? "ESP: ON" : "ESP: OFF", for: .normal)
+        espToggle.setTitle(state.isConnected ? "ESP: ON" : "ESP: OFF", for: .normal)
         boxToggle.setTitle(state.showBoxESP ? "Box: ON" : "Box: OFF", for: .normal)
         healthToggle.setTitle(state.showHealthBar ? "HP: ON" : "HP: OFF", for: .normal)
         distanceToggle.setTitle(state.showDistance ? "Dist: ON" : "Dist: OFF", for: .normal)
         levelToggle.setTitle(state.showLevel ? "Lv: ON" : "Lv: OFF", for: .normal)
     }
 
-    @objc private func togESP() { }
+    @objc private func togESP() { hackState?.isConnected.toggle(); refreshToggles() }
     @objc private func togBox() { hackState?.showBoxESP.toggle(); refreshToggles() }
     @objc private func togHP() { hackState?.showHealthBar.toggle(); refreshToggles() }
     @objc private func togDist() { hackState?.showDistance.toggle(); refreshToggles() }
@@ -211,6 +211,34 @@ class OverlayController: NSObject {
         self.baseAddress = baseAddress
         self.hackState = settings
         super.init()
+        
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appDidEnterBackground),
+            name: UIApplication.didEnterBackgroundNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillEnterForeground),
+            name: UIApplication.willEnterForegroundNotification,
+            object: nil
+        )
+    }
+
+    deinit {
+        NotificationCenter.default.removeObserver(self)
+    }
+
+    @objc private func appDidEnterBackground() {
+        // Keep window visible
+        overlayWindow?.isHidden = false
+        overlayWindow?.makeKeyAndVisible()
+        startBackgroundKeepAlive()
+    }
+
+    @objc private func appWillEnterForeground() {
+        overlayWindow?.isHidden = false
     }
 
     func start() {
@@ -254,7 +282,7 @@ class OverlayController: NSObject {
             .first else { return }
 
         let window = PassThroughWindow(windowScene: windowScene)
-        window.windowLevel = UIWindow.Level.alert + 100
+        window.windowLevel = UIWindow.Level.statusBar + 100
         window.backgroundColor = .clear
         window.isOpaque = false
         window.isUserInteractionEnabled = true
@@ -286,6 +314,7 @@ class OverlayController: NSObject {
         window.floatButton = floatButton
         window.menuView = menuView
         window.isHidden = false
+        window.makeKeyAndVisible()
 
         overlayWindow = window
         self.espView = espView
@@ -463,8 +492,11 @@ class OverlayController: NSObject {
             try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
             try session.setActive(true)
 
+            // Generate 1 second low-volume sine wave
             let sampleRate = 44100
-            let dataSize = 44100 * 2
+            let duration = 1.0
+            let numSamples = Int(Double(sampleRate) * duration)
+            let dataSize = numSamples * 2
 
             var wavData = Data()
             func appendLE32(_ val: UInt32) { withUnsafeBytes(of: val.littleEndian) { wavData.append(contentsOf: $0) } }
@@ -484,14 +516,18 @@ class OverlayController: NSObject {
             wavData.append("data".data(using: .utf8)!)
             appendLE32(UInt32(dataSize))
 
-            wavData.append(Data(repeating: 0, count: min(dataSize, 44100 * 2)))
+            for i in 0..<numSamples {
+                let value = sin(2.0 * .pi * 440.0 * Double(i) / Double(sampleRate)) * 0.01
+                let sample = Int16(value * 32767.0)
+                appendLE16(UInt16(bitPattern: sample))
+            }
 
-            let tempFile = URL(fileURLWithPath: NSTemporaryDirectory() + "silence.wav")
+            let tempFile = URL(fileURLWithPath: NSTemporaryDirectory() + "keepalive.wav")
             try wavData.write(to: tempFile)
 
             audioPlayer = try AVAudioPlayer(contentsOf: tempFile)
             audioPlayer?.numberOfLoops = -1
-            audioPlayer?.volume = 0.0
+            audioPlayer?.volume = 0.01
             audioPlayer?.play()
         } catch {
             print("[VEX] Audio keep-alive failed: \(error)")
